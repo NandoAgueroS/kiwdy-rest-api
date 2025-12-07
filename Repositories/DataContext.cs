@@ -1,3 +1,4 @@
+using KiwdyAPI.Models;
 using Microsoft.EntityFrameworkCore;
 
 namespace KiwdyAPI.Repositories
@@ -6,5 +7,10 @@ namespace KiwdyAPI.Repositories
     {
         public DataContext(DbContextOptions<DataContext> options)
             : base(options) { }
+
+        public DbSet<Usuario> Usuarios { get; set; }
+        public DbSet<Curso> Cursos { get; set; }
+        public DbSet<Seccion> Secciones { get; set; }
+        public DbSet<Material> Materiales { get; set; }
     }
 }

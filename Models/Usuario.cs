@@ -25,12 +25,12 @@ namespace KiwdyAPI.Models
 
         public string Clave { get; set; }
 
-        [NotMapped]
-        public string RolNombre { get; set; }
-
         public int Rol { get; set; }
 
-        public bool Eliminado { get; set; } = false;
+        [NotMapped]
+        public string? RolNombre => Rol > 0 ? ((Roles)Rol).ToString() : "";
+
+        public bool? Eliminado { get; set; } = false;
 
         public static IDictionary<int, string> GetRoles()
         {

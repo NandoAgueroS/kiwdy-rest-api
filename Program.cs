@@ -1,4 +1,6 @@
+using KiwdyAPI.Filters;
 using KiwdyAPI.Repositories;
+using Mapster;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
@@ -12,7 +14,9 @@ var configuration = builder.Configuration;
 builder.WebHost.ConfigureKestrel(serverOptions => serverOptions.ListenAnyIP(5199));
 builder.Services.AddRouting(options => options.LowercaseUrls = true);
 
-builder.Services.AddControllers();
+builder.Services.AddControllers(options => options.Filters.Add<GlobalExceptionFilter>());
+
+builder.Services.AddMapster();
 
 // Learn more about configuring OpenAPI at https://aka.ms/aspnet/openapi
 builder.Services.AddOpenApi();
@@ -35,6 +39,12 @@ builder
         };
     });
 
+builder.Services.AddAuthorization(options =>
+{
+    options.AddPolicy("Administrador", policy => policy.RequireRole("Administrador"));
+    options.AddPolicy("Instructor", policy => policy.RequireRole("Instructor"));
+    options.AddPolicy("Alumno", policy => policy.RequireRole("Alumno"));
+});
 var connection = configuration["ConnectionStrings:MySql"];
 builder.Services.AddDbContext<DataContext>(options =>
     options.UseMySql(connection, ServerVersion.AutoDetect(connection))
@@ -49,11 +59,16 @@ var app = builder.Build();
 if (app.Environment.IsDevelopment())
 {
     app.MapOpenApi();
+    app.UseSwagger();
+    app.UseSwaggerUI();
 }
 
 app.UseHttpsRedirection();
 
+app.UseAuthentication();
 app.UseAuthorization();
+
+app.UseStaticFiles();
 
 app.MapControllers();
 

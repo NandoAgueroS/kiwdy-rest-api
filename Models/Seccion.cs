@@ -12,7 +12,10 @@ namespace KiwdyAPI.Models
 
         public string Contenido { get; set; }
 
-        public string VideoUrl { get; set; }
+        public string? VideoUrl { get; set; }
+
+        [ForeignKey("IdSeccion")]
+        public IList<Material>? Materiales { get; set; }
 
         public int Orden { get; set; }
 

@@ -9,6 +9,7 @@
 
 appsettings.Development.json
 appsettings.json
+wwwroot/Uploads
 # Build results
 [Dd]ebug/
 [Dd]ebugPublic/

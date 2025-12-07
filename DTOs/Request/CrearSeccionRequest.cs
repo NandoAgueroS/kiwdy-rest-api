@@ -14,8 +14,6 @@ namespace KiwdyAPI.DTOs.Request
         [Required(ErrorMessage = "El contenido de la seccion es requerido")]
         public string Contenido { get; set; }
 
-        public IFormFile? VideoFile { get; set; }
-
         [Required(ErrorMessage = "El numero de orden de la seccion es requerido")]
         public int? Orden { get; set; }
     }

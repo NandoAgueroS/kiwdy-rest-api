@@ -18,7 +18,6 @@ namespace KiwdyAPI.DTOs.Request
         [Required(ErrorMessage = "El precio del curso es requerido")]
         public decimal Precio { get; set; }
 
-        [Required(ErrorMessage = "Las secciones del curso son requeridas")]
-        public IList<CrearSeccionRequest> Secciones { get; set; }
+        public IFormFile Portada { get; set; }
     }
 }

@@ -4,6 +4,8 @@ namespace KiwdyAPI.DTOs.Request
 {
     public class CrearSeccionRequest
     {
+        public int IdCurso { get; set; }
+
         [Required(ErrorMessage = "El título de la seccion es requerido")]
         [MaxLength(
             100,
@@ -16,5 +18,8 @@ namespace KiwdyAPI.DTOs.Request
 
         [Required(ErrorMessage = "El numero de orden de la seccion es requerido")]
         public int? Orden { get; set; }
+
+        public IFormFile Video { get; set; }
+        public IList<IFormFile>? MaterialExtra { get; set; }
     }
 }

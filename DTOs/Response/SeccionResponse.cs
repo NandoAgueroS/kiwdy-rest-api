@@ -1,3 +1,5 @@
+using KiwdyAPI.Models;
+
 namespace KiwdyAPI.DTOs.Response
 {
     public class SeccionResponse
@@ -11,5 +13,7 @@ namespace KiwdyAPI.DTOs.Response
         public string VideoUrl { get; set; }
 
         public int Orden { get; set; }
+
+        public IList<Material> Materiales { get; set; }
     }
 }

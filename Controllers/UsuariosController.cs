@@ -81,5 +81,11 @@ namespace KiwdyAPI.Controllers
 
             return Ok(usuario);
         }
+
+        [HttpGet("token-valido")]
+        public IActionResult tokenValido()
+        {
+            return Ok();
+        }
     }
 }

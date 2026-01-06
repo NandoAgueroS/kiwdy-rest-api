@@ -62,6 +62,17 @@ namespace KiwdyAPI.Controllers
             return Ok(curso);
         }
 
+        [HttpGet]
+        public async Task<IActionResult> Listar([FromRoute] int idCurso)
+        {
+            var cursos = await _context
+                .Cursos.Include(c => c.Secciones)
+                .ThenInclude(s => s.Materiales)
+                .ProjectToType<CursoResponse>()
+                .ToListAsync();
+            return Ok(cursos);
+        }
+
         [HttpPost("{idCurso}/portada")]
         public async Task<IActionResult> Portada(IFormFile portada, [FromRoute] int idCurso)
         {

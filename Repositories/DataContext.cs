@@ -12,5 +12,6 @@ namespace KiwdyAPI.Repositories
         public DbSet<Curso> Cursos { get; set; }
         public DbSet<Seccion> Secciones { get; set; }
         public DbSet<Material> Materiales { get; set; }
+        public DbSet<Inscripcion> Inscripciones { get; set; }
     }
 }

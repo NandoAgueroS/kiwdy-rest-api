@@ -62,12 +62,25 @@ namespace KiwdyAPI.Controllers
             return Ok(curso);
         }
 
-        [HttpGet]
-        public async Task<IActionResult> Listar([FromRoute] int idCurso)
+        [HttpGet("listar")]
+        public async Task<IActionResult> Listar()
         {
             var cursos = await _context
                 .Cursos.Include(c => c.Secciones)
                 .ThenInclude(s => s.Materiales)
+                .ProjectToType<CursoResponse>()
+                .ToListAsync();
+            return Ok(cursos);
+        }
+
+        [HttpGet("listar/populares")]
+        public async Task<IActionResult> ListarPopulares()
+        {
+            var cursos = await _context
+                .Cursos.Include(c => c.Secciones)
+                .ThenInclude(s => s.Materiales)
+                .Where(c => !c.Eliminado)
+                .OrderByDescending(c => _context.Inscripciones.Count(i => i.IdCurso == c.IdCurso))
                 .ProjectToType<CursoResponse>()
                 .ToListAsync();
             return Ok(cursos);

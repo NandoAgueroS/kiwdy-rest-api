@@ -27,7 +27,7 @@ namespace KiwdyAPI.Controllers
         }
 
         [Authorize(Policy = "Alumno")]
-        [HttpPost("{idCurso}")]
+        [HttpPost("curso/{idCurso}")]
         public async Task<IActionResult> Crear(int idCurso)
         {
             var idUsuarioAlumno = (int?)HttpContext.Items["idUsuario"];
@@ -59,9 +59,12 @@ namespace KiwdyAPI.Controllers
         {
             var idUsuarioInstructor = (int?)HttpContext.Items["idUsuario"];
 
-            IQueryable<Inscripcion> inscripcionesQuery = _context.Inscripciones.Where(i =>
-                i.Curso.IdUsuarioInstructor == idUsuarioInstructor.Value && i.Eliminado == false
-            );
+            IQueryable<Inscripcion> inscripcionesQuery = _context
+                .Inscripciones.Include(i => i.Curso)
+                .Include(i => i.UsuarioAlumno)
+                .Where(i =>
+                    i.Curso.IdUsuarioInstructor == idUsuarioInstructor.Value && i.Eliminado == false
+                );
             if (estado != null)
             {
                 inscripcionesQuery = inscripcionesQuery.Where(i => i.Estado == estado.Value);
@@ -70,6 +73,76 @@ namespace KiwdyAPI.Controllers
                 .ProjectToType<InscripcionResponse>()
                 .ToListAsync();
             return Ok(inscripciones);
+        }
+
+        [Authorize(Policy = "Instructor")]
+        [HttpGet("{idInscripcion}")]
+        public async Task<IActionResult> Buscar([FromRoute] int idInscripcion)
+        {
+            var idUsuarioInstructor = (int?)HttpContext.Items["idUsuario"];
+
+            var inscripcion = await _context
+                .Inscripciones.Include(i => i.Curso)
+                .ThenInclude(c => c.Secciones)
+                .ThenInclude(s => s.Materiales)
+                .Include(i => i.UsuarioAlumno)
+                .Include(i => i.SeccionesCompletadas)
+                .ThenInclude(s => s.Seccion)
+                .Where(i =>
+                    i.Curso.IdUsuarioInstructor == idUsuarioInstructor.Value
+                    && i.Eliminado == false
+                    && i.IdInscripcion == idInscripcion
+                )
+                .Select(i => new InscripcionResponse
+                {
+                    IdInscripcion = i.IdInscripcion,
+                    IdUsuarioAlumno = i.IdUsuarioAlumno,
+                    Curso = i.Curso.Adapt<CursoResponse>(),
+                    FechaInicio = i.FechaInicio,
+                    FechaFin = i.FechaFin,
+                    UsuarioAlumno = i.UsuarioAlumno.Adapt<UsuarioResponse>(),
+                    Estado = i.Estado.ToString(),
+                    UltimaSeccionCompletada = i.SeccionesCompletadas.Max(s => s.Seccion.Orden),
+                })
+                .SingleOrDefaultAsync();
+            if (inscripcion == null)
+                return NotFound();
+            return Ok(inscripcion);
+        }
+
+        [Authorize(Policy = "Alumno")]
+        [HttpGet("curso/{idCurso}")]
+        public async Task<IActionResult> BuscarPorCurso([FromRoute] int idCurso)
+        {
+            var idUsuarioAlumno = (int?)HttpContext.Items["idUsuario"];
+
+            var inscripcion = await _context
+                .Inscripciones.Include(i => i.Curso)
+                .ThenInclude(c => c.Secciones)
+                .ThenInclude(s => s.Materiales)
+                .Include(i => i.UsuarioAlumno)
+                .Include(i => i.SeccionesCompletadas)
+                .ThenInclude(s => s.Seccion)
+                .Where(i =>
+                    i.IdUsuarioAlumno == idUsuarioAlumno.Value
+                    && i.Eliminado == false
+                    && i.IdCurso == idCurso
+                )
+                .Select(i => new InscripcionResponse
+                {
+                    IdInscripcion = i.IdInscripcion,
+                    IdUsuarioAlumno = i.IdUsuarioAlumno,
+                    Curso = i.Curso.Adapt<CursoResponse>(),
+                    FechaInicio = i.FechaInicio,
+                    FechaFin = i.FechaFin,
+                    UsuarioAlumno = i.UsuarioAlumno.Adapt<UsuarioResponse>(),
+                    Estado = i.Estado.ToString(),
+                    UltimaSeccionCompletada = i.SeccionesCompletadas.Max(s => s.Seccion.Orden),
+                })
+                .SingleOrDefaultAsync();
+            if (inscripcion == null)
+                return NotFound();
+            return Ok(inscripcion);
         }
 
         [Authorize(Policy = "Instructor")]
@@ -94,6 +167,39 @@ namespace KiwdyAPI.Controllers
             await _context.SaveChangesAsync();
 
             return Ok(inscripcion.Adapt<InscripcionResponse>());
+        }
+
+        [HttpPost("{idInscripcion}/secciones")]
+        public async Task<IActionResult> marcarSeccionCompletada(
+            int idInscripcion,
+            [FromBody] MarcarSeccionCompletadaRequest request
+        )
+        {
+            var inscripcion = await _context
+                .Inscripciones.Include(i => i.Curso)
+                .ThenInclude(c => c.Secciones)
+                .SingleOrDefaultAsync(i => i.IdInscripcion == idInscripcion && !i.Eliminado);
+            if (inscripcion == null)
+                return NotFound();
+            var seccion = await _context.Secciones.SingleOrDefaultAsync(s =>
+                s.IdSeccion == request.idSeccion && !s.Eliminado && s.IdCurso == inscripcion.IdCurso
+            );
+            if (seccion == null)
+                return NotFound();
+
+            if (inscripcion.SeccionesCompletadas == null)
+                inscripcion.SeccionesCompletadas = new List<SeccionCompletada>();
+            inscripcion.SeccionesCompletadas.Add(
+                new SeccionCompletada
+                {
+                    IdInscripcion = idInscripcion,
+                    IdSeccion = request.idSeccion,
+                }
+            );
+            if (inscripcion.Curso.Secciones.MaxBy(s => s.Orden).IdSeccion == request.idSeccion)
+                inscripcion.Estado = Inscripcion.EstadoInscripcion.PendienteCertificacion;
+            await _context.SaveChangesAsync();
+            return Created();
         }
     }
 }

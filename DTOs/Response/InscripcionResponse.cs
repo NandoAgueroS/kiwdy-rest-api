@@ -8,5 +8,7 @@ namespace KiwdyAPI.DTOs.Response
         public String Estado { get; set; }
         public CursoResponse Curso { get; set; }
         public int IdUsuarioAlumno { get; set; }
+        public int? UltimaSeccionCompletada { get; set; } = 0;
+        public UsuarioResponse UsuarioAlumno { get; set; }
     }
 }

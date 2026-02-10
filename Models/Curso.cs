@@ -11,6 +11,9 @@ namespace KiwdyAPI.Models
         [ForeignKey("IdUsuarioInstructor")]
         public int IdUsuarioInstructor { get; set; }
 
+        [ForeignKey("IdUsuarioInstructor")]
+        public Usuario UsuarioInstructor { get; set; }
+
         public string Titulo { get; set; }
 
         public string Descripcion { get; set; }
@@ -25,5 +28,7 @@ namespace KiwdyAPI.Models
 
         [ForeignKey("IdCurso")]
         public IList<Seccion> Secciones { get; set; }
+
+        public IList<Inscripcion> Inscripciones { get; set; }
     }
 }

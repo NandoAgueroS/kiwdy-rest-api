@@ -5,6 +5,7 @@ namespace KiwdyAPI.DTOs.Response
     public class SeccionResponse
     {
         public int IdSeccion { get; set; }
+        public int IdCurso { get; set; }
 
         public string Titulo { get; set; }
 

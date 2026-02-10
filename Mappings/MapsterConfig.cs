@@ -16,6 +16,7 @@ namespace KiwdyAPI.Mappings
             config.NewConfig<CrearCursoRequest, Curso>();
 
             config.NewConfig<Curso, CursoResponse>();
+            config.NewConfig<Curso, CursoAlumnoResponse>();
 
             config.NewConfig<CrearSeccionRequest, Seccion>();
 

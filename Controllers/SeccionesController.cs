@@ -45,15 +45,16 @@ namespace KiwdyAPI.Controllers
             var video = seccionRequest.Video;
             var materialExtra = seccionRequest.MaterialExtra;
 
-            seccion.VideoUrl = ArchivoService.guardarArchivo(_webEnv, "seccion_video", video).Url;
+            seccion.VideoUrl = ArchivoService
+                .guardarArchivoEstatico(_webEnv, "seccion_video", video)
+                .Url;
             if (materialExtra != null)
             {
                 if (seccion.Materiales == null)
                     seccion.Materiales = new List<Material>();
                 foreach (IFormFile material in materialExtra)
                 {
-                    ArchivoInfo archivoInfo = ArchivoService.guardarArchivo(
-                        _webEnv,
+                    ArchivoInfo archivoInfo = ArchivoService.guardarArchivoMaterial(
                         "seccion_material",
                         material
                     );
@@ -68,6 +69,20 @@ namespace KiwdyAPI.Controllers
             await _context.SaveChangesAsync();
 
             return StatusCode(201, seccion.Adapt<SeccionResponse>());
+        }
+
+        [HttpGet("descargar/material/{idMaterial}")]
+        [AllowAnonymous]
+        public async Task<IActionResult> obtenerMaterial(int idMaterial)
+        {
+            var material = await _context.Materiales.SingleOrDefaultAsync(m =>
+                m.IdMaterial == idMaterial
+            );
+            var ruta = Path.Combine("/Materiales", material.Url);
+            if (!System.IO.File.Exists(ruta))
+                return NotFound();
+            var stream = System.IO.File.OpenRead(ruta);
+            return File(stream, "application/octet-stream", Path.GetFileName(ruta));
         }
 
         [HttpPost("secciones/{idSeccion}/video")]

@@ -1,17 +1,31 @@
 using KiwdyAPI.Filters;
 using KiwdyAPI.Repositories;
+using KiwdyAPI.Services;
 using Mapster;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
+using QuestPDF.Infrastructure;
 
 var builder = WebApplication.CreateBuilder(args);
 
+QuestPDF.Settings.License = LicenseType.Community;
 var configuration = builder.Configuration;
 
 // Add services to the container.
 
-builder.WebHost.ConfigureKestrel(serverOptions => serverOptions.ListenAnyIP(5199));
+builder.WebHost.ConfigureKestrel(serverOptions =>
+{
+    serverOptions.ListenAnyIP(5199);
+    serverOptions.Limits.MaxRequestBodySize = 500_000_000;
+});
+
+var supportedCultures = new[] { "en-US" };
+var localizationOptions = new RequestLocalizationOptions()
+    .SetDefaultCulture(supportedCultures[0])
+    .AddSupportedCultures(supportedCultures)
+    .AddSupportedUICultures(supportedCultures);
+
 builder.Services.AddRouting(options => options.LowercaseUrls = true);
 
 builder.Services.AddControllers(options => options.Filters.Add<GlobalExceptionFilter>());
@@ -22,6 +36,7 @@ builder.Services.AddMapster();
 builder.Services.AddOpenApi();
 
 builder.Services.AddScoped<UsuarioExistenteFilter>();
+builder.Services.AddScoped<ICertificadoService, CertificadoService>();
 
 builder
     .Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
@@ -46,6 +61,7 @@ builder.Services.AddAuthorization(options =>
     options.AddPolicy("Administrador", policy => policy.RequireRole("Administrador"));
     options.AddPolicy("Instructor", policy => policy.RequireRole("Instructor"));
     options.AddPolicy("Alumno", policy => policy.RequireRole("Alumno"));
+    options.AddPolicy("InstructorOAlumno", policy => policy.RequireRole("Instructor", "Alumno"));
 });
 var connection = configuration["ConnectionStrings:MySql"];
 builder.Services.AddDbContext<DataContext>(options =>
@@ -56,6 +72,7 @@ builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
 
 var app = builder.Build();
+app.UseRequestLocalization(localizationOptions);
 
 // Configure the HTTP request pipeline.
 if (app.Environment.IsDevelopment())

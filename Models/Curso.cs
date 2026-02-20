@@ -24,6 +24,8 @@ namespace KiwdyAPI.Models
 
         public bool Habilitado { get; set; } = true;
 
+        public decimal? NotaAprobacion { get; set; } = -1;
+
         public bool Eliminado { get; set; } = false;
 
         [ForeignKey("IdCurso")]

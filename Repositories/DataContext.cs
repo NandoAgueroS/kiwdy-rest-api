@@ -14,6 +14,7 @@ namespace KiwdyAPI.Repositories
         public DbSet<Material> Materiales { get; set; }
         public DbSet<Inscripcion> Inscripciones { get; set; }
         public DbSet<SeccionCompletada> SeccionesCompletadas { get; set; }
+        public DbSet<Examen> Examenes { get; set; }
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {

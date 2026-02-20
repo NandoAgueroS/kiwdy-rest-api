@@ -11,6 +11,8 @@ namespace KiwdyAPI.Models
         public DateTime? FechaFin { get; set; }
         public EstadoInscripcion Estado { get; set; }
 
+        public string? Certificado { get; set; }
+
         public int IdCurso { get; set; }
 
         [ForeignKey("IdCurso")]

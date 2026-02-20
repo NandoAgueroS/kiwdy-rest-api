@@ -45,9 +45,12 @@ namespace KiwdyAPI.Controllers
             var video = seccionRequest.Video;
             var materialExtra = seccionRequest.MaterialExtra;
 
-            seccion.VideoUrl = ArchivoService
-                .guardarArchivoEstatico(_webEnv, "seccion_video", video)
-                .Url;
+            if (video != null)
+            {
+                seccion.VideoUrl = ArchivoService
+                    .guardarArchivoEstatico(_webEnv, "seccion_video", video)
+                    .Url;
+            }
             if (materialExtra != null)
             {
                 if (seccion.Materiales == null)
@@ -67,18 +70,21 @@ namespace KiwdyAPI.Controllers
             await _context.Secciones.AddAsync(seccion);
 
             await _context.SaveChangesAsync();
+            Console.WriteLine("saved");
+            Console.WriteLine(seccion);
 
-            return StatusCode(201, seccion.Adapt<SeccionResponse>());
+            // return StatusCode(201, seccion.Adapt<SeccionResponse>());
+            return StatusCode(201, new { mensaje = "ok" });
         }
 
-        [HttpGet("descargar/material/{idMaterial}")]
+        [HttpGet("material/{idMaterial}")]
         [AllowAnonymous]
         public async Task<IActionResult> obtenerMaterial(int idMaterial)
         {
             var material = await _context.Materiales.SingleOrDefaultAsync(m =>
                 m.IdMaterial == idMaterial
             );
-            var ruta = Path.Combine("/Materiales", material.Url);
+            var ruta = material.Url;
             if (!System.IO.File.Exists(ruta))
                 return NotFound();
             var stream = System.IO.File.OpenRead(ruta);

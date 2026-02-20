@@ -19,7 +19,7 @@ namespace KiwdyAPI.DTOs.Request
         [Required(ErrorMessage = "El numero de orden de la seccion es requerido")]
         public int? Orden { get; set; }
 
-        public IFormFile Video { get; set; }
+        public IFormFile? Video { get; set; }
         public IList<IFormFile>? MaterialExtra { get; set; }
     }
 }

@@ -1,4 +1,5 @@
 using System.ComponentModel.DataAnnotations;
+using System.ComponentModel.DataAnnotations.Schema;
 
 namespace KiwdyAPI.DTOs.Request
 {
@@ -16,7 +17,11 @@ namespace KiwdyAPI.DTOs.Request
         public string Descripcion { get; set; }
 
         [Required(ErrorMessage = "El precio del curso es requerido")]
-        public decimal Precio { get; set; }
+        [Column(TypeName = "decimal(18,2)")]
+        public decimal? Precio { get; set; }
+
+        [Column(TypeName = "decimal(18,2)")]
+        public decimal? NotaAprobacion { get; set; }
 
         public IFormFile Portada { get; set; }
     }

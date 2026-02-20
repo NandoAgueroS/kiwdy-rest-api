@@ -19,11 +19,17 @@ namespace KiwdyAPI.Controllers
     {
         private readonly DataContext _context;
         private readonly IWebHostEnvironment _webEnv;
+        private readonly ICertificadoService _certificadoService;
 
-        public InscripcionesController(DataContext context, IWebHostEnvironment webEnv)
+        public InscripcionesController(
+            DataContext context,
+            IWebHostEnvironment webEnv,
+            ICertificadoService certificadoService
+        )
         {
             _context = context;
             _webEnv = webEnv;
+            _certificadoService = certificadoService;
         }
 
         [Authorize(Policy = "Alumno")]
@@ -55,7 +61,10 @@ namespace KiwdyAPI.Controllers
 
         [Authorize(Policy = "Instructor")]
         [HttpGet]
-        public async Task<IActionResult> Listar([FromQuery] Inscripcion.EstadoInscripcion? estado)
+        public async Task<IActionResult> Listar(
+            [FromQuery] Inscripcion.EstadoInscripcion? estado,
+            [FromQuery] int? idCurso
+        )
         {
             var idUsuarioInstructor = (int?)HttpContext.Items["idUsuario"];
 
@@ -68,6 +77,10 @@ namespace KiwdyAPI.Controllers
             if (estado != null)
             {
                 inscripcionesQuery = inscripcionesQuery.Where(i => i.Estado == estado.Value);
+            }
+            if (idCurso != null)
+            {
+                inscripcionesQuery = inscripcionesQuery.Where(i => i.IdCurso == idCurso);
             }
             var inscripciones = await inscripcionesQuery
                 .ProjectToType<InscripcionResponse>()
@@ -163,6 +176,15 @@ namespace KiwdyAPI.Controllers
                 return BadRequest("No se encontro la inscripcion");
 
             inscripcion.Estado = estado;
+            switch (estado)
+            {
+                case Inscripcion.EstadoInscripcion.EnCurso:
+                    inscripcion.FechaInicio = DateTime.UtcNow.Date;
+                    break;
+                case Inscripcion.EstadoInscripcion.Certificada:
+                    inscripcion.FechaFin = DateTime.UtcNow.Date;
+                    break;
+            }
 
             await _context.SaveChangesAsync();
 
@@ -178,6 +200,7 @@ namespace KiwdyAPI.Controllers
             var inscripcion = await _context
                 .Inscripciones.Include(i => i.Curso)
                 .ThenInclude(c => c.Secciones)
+                .Include(i => i.UsuarioAlumno)
                 .SingleOrDefaultAsync(i => i.IdInscripcion == idInscripcion && !i.Eliminado);
             if (inscripcion == null)
                 return NotFound();
@@ -189,6 +212,7 @@ namespace KiwdyAPI.Controllers
 
             if (inscripcion.SeccionesCompletadas == null)
                 inscripcion.SeccionesCompletadas = new List<SeccionCompletada>();
+
             inscripcion.SeccionesCompletadas.Add(
                 new SeccionCompletada
                 {
@@ -196,10 +220,48 @@ namespace KiwdyAPI.Controllers
                     IdSeccion = request.idSeccion,
                 }
             );
+
             if (inscripcion.Curso.Secciones.MaxBy(s => s.Orden).IdSeccion == request.idSeccion)
-                inscripcion.Estado = Inscripcion.EstadoInscripcion.PendienteCertificacion;
+                if (inscripcion.Curso.NotaAprobacion != -1)
+                {
+                    inscripcion.Estado = Inscripcion.EstadoInscripcion.PendienteCertificacion;
+                }
+                else
+                {
+                    inscripcion.Estado = Inscripcion.EstadoInscripcion.Certificada;
+                    var alumno = inscripcion.UsuarioAlumno;
+                    var curso = inscripcion.Curso;
+                    var certificado = _certificadoService.Generar(
+                        alumno.Nombre + " " + alumno.Apellido,
+                        curso.Titulo
+                    );
+                    var ruta = "Uploads/Certificados";
+                    var nombre = "certificado" + idInscripcion + ".pdf";
+                    ArchivoService.guardarBytes(ruta, nombre, certificado);
+                    inscripcion.Certificado = ruta + "/" + nombre;
+                    inscripcion.FechaFin = DateTime.UtcNow.Date;
+                }
             await _context.SaveChangesAsync();
             return Created();
+        }
+
+        [HttpGet("{idInscripcion}/certificado")]
+        public async Task<IActionResult> obtenerCertificado(int idInscripcion)
+        {
+            var inscripcion = await _context.Inscripciones.SingleOrDefaultAsync(i =>
+                i.IdInscripcion == idInscripcion
+            );
+            if (inscripcion == null)
+                return NotFound();
+
+            var ruta = inscripcion.Certificado;
+
+            if (!System.IO.File.Exists(ruta))
+                return NotFound();
+
+            var stream = System.IO.File.OpenRead(ruta);
+
+            return File(stream, "application/octet-stream", Path.GetFileName(ruta));
         }
     }
 }

@@ -67,7 +67,7 @@ namespace KiwdyAPI.Controllers
                         i.IdUsuarioAlumno == idUsuario
                         && i.Estado == Inscripcion.EstadoInscripcion.Certificada
                     ),
-                    Secciones = c.Secciones.Adapt<List<SeccionResponse>>(),
+                    Secciones = c.Secciones.OrderBy(s => s.Orden).Adapt<List<SeccionResponse>>(),
                 })
                 .FirstOrDefaultAsync();
             return Ok(curso);

@@ -11,7 +11,7 @@ namespace KiwdyAPI.DTOs.Response
 
         public string Contenido { get; set; }
 
-        public string VideoUrl { get; set; }
+        public string? VideoUrl { get; set; }
 
         public int Orden { get; set; }
 

@@ -46,5 +46,16 @@ namespace KiwdyAPI.Services
             ArchivoInfo archivoInfo = new ArchivoInfo { Nombre = fileName, Url = url };
             return archivoInfo;
         }
+
+        public static void guardarBytes(String path, String nombreArchivo, byte[] archivo)
+        {
+            if (!Directory.Exists(path))
+            {
+                Directory.CreateDirectory(path);
+            }
+            string pathCompleto = Path.Combine(path, nombreArchivo);
+
+            System.IO.File.WriteAllBytes(pathCompleto, archivo);
+        }
     }
 }

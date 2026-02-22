@@ -44,14 +44,21 @@ namespace KiwdyAPI.Controllers
             );
             if (curso == null)
                 return BadRequest("El curso no existe");
-
             Inscripcion inscripcion = new Inscripcion
             {
                 IdCurso = idCurso,
                 Curso = curso,
                 IdUsuarioAlumno = idUsuarioAlumno.Value,
-                Estado = Inscripcion.EstadoInscripcion.Solicitada,
             };
+            if (curso.Precio == 0)
+            {
+                inscripcion.Estado = Inscripcion.EstadoInscripcion.EnCurso;
+                inscripcion.FechaInicio = DateTime.UtcNow;
+            }
+            else
+            {
+                inscripcion.Estado = Inscripcion.EstadoInscripcion.Solicitada;
+            }
 
             await _context.Inscripciones.AddAsync(inscripcion);
             await _context.SaveChangesAsync();
@@ -81,6 +88,28 @@ namespace KiwdyAPI.Controllers
             if (idCurso != null)
             {
                 inscripcionesQuery = inscripcionesQuery.Where(i => i.IdCurso == idCurso);
+            }
+            var inscripciones = await inscripcionesQuery
+                .ProjectToType<InscripcionResponse>()
+                .ToListAsync();
+            return Ok(inscripciones);
+        }
+
+        [Authorize(Policy = "Alumno")]
+        [HttpGet("alumno")]
+        public async Task<IActionResult> Listar([FromQuery] string? tituloCurso)
+        {
+            var idUsuarioAlumno = (int?)HttpContext.Items["idUsuario"];
+
+            IQueryable<Inscripcion> inscripcionesQuery = _context
+                .Inscripciones.Include(i => i.Curso)
+                .Include(i => i.UsuarioAlumno)
+                .Where(i => i.IdUsuarioAlumno == idUsuarioAlumno.Value && i.Eliminado == false);
+            if (tituloCurso != null)
+            {
+                inscripcionesQuery = inscripcionesQuery.Where(i =>
+                    i.Curso.Titulo.Contains(tituloCurso)
+                );
             }
             var inscripciones = await inscripcionesQuery
                 .ProjectToType<InscripcionResponse>()
@@ -133,6 +162,8 @@ namespace KiwdyAPI.Controllers
                 .Inscripciones.Include(i => i.Curso)
                 .ThenInclude(c => c.Secciones)
                 .ThenInclude(s => s.Materiales)
+                .Include(i => i.Curso)
+                .ThenInclude(c => c.UsuarioInstructor)
                 .Include(i => i.UsuarioAlumno)
                 .Include(i => i.SeccionesCompletadas)
                 .ThenInclude(s => s.Seccion)
@@ -242,7 +273,7 @@ namespace KiwdyAPI.Controllers
                     inscripcion.FechaFin = DateTime.UtcNow.Date;
                 }
             await _context.SaveChangesAsync();
-            return Created();
+            return Ok(inscripcion.Adapt<InscripcionResponse>());
         }
 
         [HttpGet("{idInscripcion}/certificado")]

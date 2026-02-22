@@ -91,7 +91,10 @@ namespace KiwdyAPI.Controllers
                 examenesQuery = examenesQuery.Where(e =>
                     e.Inscripcion.IdUsuarioAlumno == idUsuario
                 );
-            var examenes = await examenesQuery.ProjectToType<ExamenResponse>().ToListAsync();
+            var examenes = await examenesQuery
+                .OrderByDescending(e => e.FechaYHora)
+                .ProjectToType<ExamenResponse>()
+                .ToListAsync();
             return Ok(examenes);
         }
 
@@ -173,7 +176,10 @@ namespace KiwdyAPI.Controllers
                     e.Inscripcion.IdUsuarioAlumno == idUsuario
                 );
 
-            var examen = await examenesQuery.ProjectToType<ExamenResponse>().ToListAsync();
+            var examen = await examenesQuery
+                .OrderByDescending(e => e.FechaYHora)
+                .ProjectToType<ExamenResponse>()
+                .ToListAsync();
 
             if (examen == null)
                 return NotFound();

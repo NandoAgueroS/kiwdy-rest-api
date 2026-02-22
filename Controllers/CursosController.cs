@@ -55,6 +55,7 @@ namespace KiwdyAPI.Controllers
                 .Cursos.Include(c => c.Inscripciones)
                 .Include(c => c.Secciones)
                 .ThenInclude(s => s.Materiales)
+                .Include(c => c.UsuarioInstructor)
                 .Where(c => c.IdCurso == idCurso && c.Eliminado == false)
                 .Select(c => new CursoAlumnoResponse
                 {
@@ -62,7 +63,11 @@ namespace KiwdyAPI.Controllers
                     Titulo = c.Titulo,
                     Descripcion = c.Descripcion,
                     PortadaUrl = c.PortadaUrl,
-                    EstaInscripto = c.Inscripciones.Any(i => i.IdUsuarioAlumno == idUsuario),
+                    Precio = c.Precio,
+                    EstaInscripto = c.Inscripciones.Any(i =>
+                        i.IdUsuarioAlumno == idUsuario
+                        && i.Estado != Inscripcion.EstadoInscripcion.Solicitada
+                    ),
                     EstaFinalizado = c.Inscripciones.Any(i =>
                         i.IdUsuarioAlumno == idUsuario
                         && i.Estado == Inscripcion.EstadoInscripcion.Certificada
@@ -73,52 +78,24 @@ namespace KiwdyAPI.Controllers
             return Ok(curso);
         }
 
-        // [HttpGet("{idCurso}/inscripcion-detalle")]
-        // public async Task<IActionResult> BuscarInscripcionDetalle([FromRoute] int idCurso)
-        // {
-        //     var idUsuario = (int?)HttpContext.Items["idUsuario"];
-        //     var curso = await _context
-        //         .Cursos.Where(c => c.IdCurso == idCurso && !c.Eliminado)
-        //         .Select(c => new CursoInscripcionResponse
-        //         {
-        //             IdCurso = c.IdCurso,
-        //             Titulo = c.Titulo,
-        //             Descripcion = c.Descripcion,
-        //             PortadaUrl = c.PortadaUrl,
-        //             Instructor = c.UsuarioInstructor.Nombre + " " + c.UsuarioInstructor.Apellido,
-        //             Secciones = c.Secciones.Adapt<List<SeccionResponse>>(),
-        //             EstaInscripto = c.Inscripciones.Any(i => i.IdUsuarioAlumno == idUsuario),
-        //             IdInscripcion = c
-        //                 .Inscripciones.Where(i => i.IdUsuarioAlumno == idUsuario)
-        //                 .Select(i => i.IdInscripcion)
-        //                 .FirstOrDefault(),
-        //             UltimaSeccionCompletada = c
-        //                 .Inscripciones.Where(i => i.IdUsuarioAlumno == idUsuario)
-        //                 .Select(i => i.SeccionesCompletadas.Max(s => s.Seccion.Orden))
-        //                 .FirstOrDefault(),
-        //             EstadoInscripcion = c
-        //                 .Inscripciones.Where(i => i.IdUsuarioAlumno == idUsuario)
-        //                 .Select(i => i.Estado)
-        //                 .FirstOrDefault()
-        //                 .ToString(),
-        //         })
-        //         .FirstOrDefaultAsync();
-        //     return Ok(curso);
-        // }
-
         [HttpGet("listar")]
-        public async Task<IActionResult> Listar()
+        public async Task<IActionResult> Listar([FromQuery] string? tituloCurso)
         {
-            var cursos = _context
+            var cursosQuery = _context
                 .Cursos.Include(c => c.Secciones)
                 .ThenInclude(s => s.Materiales)
+                .Include(c => c.UsuarioInstructor)
                 .Where(c => c.Eliminado == false);
             if (User.IsInRole("Instructor"))
             {
                 var idUsuario = (int?)HttpContext.Items["idUsuario"];
-                cursos = cursos.Where(c => c.IdUsuarioInstructor == idUsuario);
+                cursosQuery = cursosQuery.Where(c => c.IdUsuarioInstructor == idUsuario);
             }
-            var cursosList = await cursos
+            if (tituloCurso != null)
+            {
+                cursosQuery = cursosQuery.Where(c => c.Titulo.Contains(tituloCurso));
+            }
+            var cursosList = await cursosQuery
                 .OrderByDescending(c => c.IdCurso)
                 .ProjectToType<CursoResponse>()
                 .ToListAsync();
@@ -131,6 +108,7 @@ namespace KiwdyAPI.Controllers
             var cursos = await _context
                 .Cursos.Include(c => c.Secciones)
                 .ThenInclude(s => s.Materiales)
+                .Include(c => c.UsuarioInstructor)
                 .Where(c => !c.Eliminado)
                 .OrderByDescending(c => _context.Inscripciones.Count(i => i.IdCurso == c.IdCurso))
                 .ProjectToType<CursoResponse>()

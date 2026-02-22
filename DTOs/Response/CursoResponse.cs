@@ -10,9 +10,13 @@ namespace KiwdyAPI.DTOs.Response
 
         public string PortadaUrl { get; set; }
 
+        public UsuarioResponse UsuarioInstructor { get; set; }
+
         public decimal Precio { get; set; }
 
         public bool Habilitado { get; set; } = true;
+
+        public decimal? NotaAprobacion { get; set; }
 
         public bool Eliminado { get; set; } = false;
 

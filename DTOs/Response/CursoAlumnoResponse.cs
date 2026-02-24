@@ -12,6 +12,10 @@ namespace KiwdyAPI.DTOs.Response
 
         public decimal Precio { get; set; }
 
+        public bool Habilitado { get; set; }
+
+        public decimal NotaAprobacion { get; set; }
+
         public bool EstaInscripto { get; set; }
         public bool EstaFinalizado { get; set; }
 

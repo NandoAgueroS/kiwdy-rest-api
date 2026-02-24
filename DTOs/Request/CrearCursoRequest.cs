@@ -10,10 +10,6 @@ namespace KiwdyAPI.DTOs.Request
         public string Titulo { get; set; }
 
         [Required(ErrorMessage = "La descripción del curso es requerida")]
-        [MaxLength(
-            500,
-            ErrorMessage = "La descripción del curso no puede tener más de 255 caracteres"
-        )]
         public string Descripcion { get; set; }
 
         [Required(ErrorMessage = "El precio del curso es requerido")]

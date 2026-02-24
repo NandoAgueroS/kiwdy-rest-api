@@ -1,6 +1,7 @@
 using KiwdyAPI.DTOs;
 using KiwdyAPI.DTOs.Request;
 using KiwdyAPI.DTOs.Response;
+using KiwdyAPI.Filters;
 using KiwdyAPI.Models;
 using KiwdyAPI.Repositories;
 using KiwdyAPI.Services;
@@ -14,6 +15,7 @@ namespace KiwdyAPI.Controllers
     [ApiController]
     [Route("api/[controller]")]
     [Authorize]
+    [ServiceFilter(typeof(UsuarioExistenteFilter))]
     public class SeccionesController : ControllerBase
     {
         private readonly DataContext _context;
@@ -29,17 +31,7 @@ namespace KiwdyAPI.Controllers
         [RequestSizeLimit(500_000_000)]
         public async Task<IActionResult> Crear(CrearSeccionRequest seccionRequest)
         {
-            var idUsuario = int.Parse(User?.Identity?.Name ?? "0");
-
-            if (idUsuario == 0)
-                return BadRequest("Error de autenticación");
-
-            var usuario = await _context.Usuarios.SingleOrDefaultAsync(u =>
-                u.IdUsuario == idUsuario && u.Eliminado == false
-            );
-
-            if (usuario == null)
-                return BadRequest("No se encontró el usuario");
+            var idUsuario = (int?)HttpContext.Items["idUsuario"];
 
             var seccion = seccionRequest.Adapt<Seccion>();
             var video = seccionRequest.Video;
@@ -95,17 +87,7 @@ namespace KiwdyAPI.Controllers
         [RequestSizeLimit(500_000_000)]
         public async Task<IActionResult> SeccionVideo(IFormFile video, [FromRoute] int idSeccion)
         {
-            var idUsuario = int.Parse(User?.Identity?.Name ?? "0");
-
-            if (idUsuario == 0)
-                return BadRequest("Error de autenticación");
-
-            var usuario = await _context.Usuarios.SingleOrDefaultAsync(u =>
-                u.IdUsuario == idUsuario && u.Eliminado == false
-            );
-
-            if (usuario == null)
-                return BadRequest("No se encontró el usuario");
+            var idUsuario = (int?)HttpContext.Items["idUsuario"];
 
             var seccion = await _context.Secciones.SingleOrDefaultAsync(s =>
                 s.IdSeccion == idSeccion && s.Eliminado == false
@@ -140,17 +122,7 @@ namespace KiwdyAPI.Controllers
             [FromRoute] int idSeccion
         )
         {
-            var idUsuario = int.Parse(User?.Identity?.Name ?? "0");
-
-            if (idUsuario == 0)
-                return BadRequest("Error de autenticación");
-
-            var usuario = await _context.Usuarios.SingleOrDefaultAsync(u =>
-                u.IdUsuario == idUsuario && u.Eliminado == false
-            );
-
-            if (usuario == null)
-                return BadRequest("No se encontró el usuario");
+            var idUsuario = (int?)HttpContext.Items["idUsuario"];
 
             var seccion = await _context.Secciones.SingleOrDefaultAsync(s =>
                 s.IdSeccion == idSeccion && s.Eliminado == false
@@ -188,6 +160,33 @@ namespace KiwdyAPI.Controllers
             await _context.SaveChangesAsync();
 
             return StatusCode(201, seccion.Materiales);
+        }
+
+        [HttpGet("orden/{orden}/curso/{idCurso}")]
+        public async Task<IActionResult> buscarPorOrdenYCurso(
+            [FromRoute] int orden,
+            [FromRoute] int idCurso
+        )
+        {
+            var idUsuario = (int?)HttpContext.Items["idUsuario"];
+
+            var seccion = await _context
+                .Cursos.Include(c => c.Secciones)
+                .ThenInclude(s => s.Materiales)
+                .Where(c =>
+                    c.IdCurso == idCurso && c.IdUsuarioInstructor == idUsuario && !c.Eliminado
+                )
+                .SelectMany(c => c.Secciones)
+                .Where(s => s.Orden == orden && !s.Eliminado)
+                .ProjectToType<SeccionResponse>()
+                .SingleOrDefaultAsync();
+            Console.WriteLine("llego al endpoint");
+            Console.WriteLine("orden " + orden);
+            Console.WriteLine("idCurso" + idCurso);
+            if (seccion == null)
+                return NotFound();
+
+            return Ok(seccion);
         }
     }
 }

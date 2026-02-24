@@ -1,4 +1,5 @@
 using QuestPDF.Fluent;
+using QuestPDF.Helpers;
 using QuestPDF.Infrastructure;
 
 namespace KiwdyAPI.Services
@@ -18,6 +19,8 @@ namespace KiwdyAPI.Services
         {
             container.Page(page =>
             {
+                page.PageColor(Colors.Green.Accent1);
+                page.Background().Border(70).BorderColor(Colors.Green.Darken1);
                 page.Margin(40);
 
                 page.Content()
@@ -27,17 +30,20 @@ namespace KiwdyAPI.Services
 
                         col.Item()
                             .Text("Certificado de finalización")
-                            .FontSize(28)
+                            .FontSize(35)
                             .Bold()
                             .AlignCenter();
 
-                        col.Item().Text($"Se certifica que el alumno").FontSize(16).AlignCenter();
+                        col.Item().Text($"Se certifica que el alumno").FontSize(22).AlignCenter();
 
-                        col.Item().Text(NombreAlumno).FontSize(22).Bold().AlignCenter();
+                        col.Item().Text(NombreAlumno).FontSize(25).Bold().AlignCenter();
 
-                        col.Item().Text($"Ha completado satisfactoriamente el curso").AlignCenter();
+                        col.Item()
+                            .Text($"Ha completado satisfactoriamente el curso")
+                            .FontSize(18)
+                            .AlignCenter();
 
-                        col.Item().Text(NombreCurso).FontSize(18).Bold().AlignCenter();
+                        col.Item().Text(NombreCurso).FontSize(20).Bold().AlignCenter();
 
                         col.Item().Text($"El día: {Fecha:dd/MM/yyyy}").AlignCenter();
                     });

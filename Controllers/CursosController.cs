@@ -63,7 +63,9 @@ namespace KiwdyAPI.Controllers
                     Titulo = c.Titulo,
                     Descripcion = c.Descripcion,
                     PortadaUrl = c.PortadaUrl,
+                    Habilitado = c.Habilitado,
                     Precio = c.Precio,
+                    NotaAprobacion = c.NotaAprobacion.Value,
                     EstaInscripto = c.Inscripciones.Any(i =>
                         i.IdUsuarioAlumno == idUsuario
                         && i.Estado != Inscripcion.EstadoInscripcion.Solicitada
@@ -91,6 +93,10 @@ namespace KiwdyAPI.Controllers
                 var idUsuario = (int?)HttpContext.Items["idUsuario"];
                 cursosQuery = cursosQuery.Where(c => c.IdUsuarioInstructor == idUsuario);
             }
+            if (User.IsInRole("Alumno"))
+            {
+                cursosQuery = cursosQuery.Where(c => c.Habilitado);
+            }
             if (tituloCurso != null)
             {
                 cursosQuery = cursosQuery.Where(c => c.Titulo.Contains(tituloCurso));
@@ -105,15 +111,48 @@ namespace KiwdyAPI.Controllers
         [HttpGet("listar/populares")]
         public async Task<IActionResult> ListarPopulares()
         {
-            var cursos = await _context
+            var idUsuario = (int?)HttpContext.Items["idUsuario"];
+
+            var cursosQuery = _context
                 .Cursos.Include(c => c.Secciones)
                 .ThenInclude(s => s.Materiales)
                 .Include(c => c.UsuarioInstructor)
-                .Where(c => !c.Eliminado)
+                .Where(c => !c.Eliminado);
+            if (User.IsInRole("Instructor"))
+            {
+                cursosQuery = cursosQuery.Where(c => c.IdUsuarioInstructor == idUsuario);
+            }
+            if (User.IsInRole("Alumno"))
+            {
+                cursosQuery = cursosQuery.Where(c => c.Habilitado);
+            }
+            var cursos = await cursosQuery
                 .OrderByDescending(c => _context.Inscripciones.Count(i => i.IdCurso == c.IdCurso))
                 .ProjectToType<CursoResponse>()
                 .ToListAsync();
             return Ok(cursos);
+        }
+
+        [HttpPatch("habilitado/{idCurso}")]
+        public async Task<IActionResult> actualizarHabilitado(
+            int idCurso,
+            [FromBody] ActualizarHabilitadoCursoRequest request
+        )
+        {
+            var idUsuario = (int?)HttpContext.Items["idUsuario"];
+
+            var curso = await _context.Cursos.SingleOrDefaultAsync(c =>
+                c.IdCurso == idCurso && c.IdUsuarioInstructor == idUsuario && !c.Eliminado
+            );
+
+            if (curso == null)
+                return NotFound();
+
+            curso.Habilitado = request.Habilitado.Value;
+
+            await _context.SaveChangesAsync();
+
+            return Ok();
         }
 
         [HttpPost("{idCurso}/portada")]
